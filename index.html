@@ -31,7 +31,7 @@
 				{ val: 'l**', name: 'latex', type: 'paired' }, //TODO it's not working
 				{ val: '**l', name: 'right_latex' }, //TODO it's not working
 
-				{ reg: /(?<!(\.|\d|\)))%.*$/m, name: 'latex-line', mode: "ignore_borders", range: [1] },
+				{ reg: /(?<!(\.|\d|\)|\S))%.*$/m, name: 'latex-line', mode: "ignore_borders", range: [1] },
 				{ reg: /(?<!\.)%l.*$/m, name: 'latex-line', mode: "ignore_borders", range: [2]  },
 
 				{ reg: /\n/, name: 'new_line' },
