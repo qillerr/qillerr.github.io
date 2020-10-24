@@ -1,10 +1,17 @@
 # MeX
-More readable ascii mathematics - converting straight to LaTeX
+More readable ascii mathematics - converting straight to LaTeX  
 
-It's not meant to be usable for every kind of an equation. If something's not supported you'll be able to paste native latex (todo)
+Kind of a demo but it's very much usable!  
+Now the parser/replacer is not in any way SOTA, or even good, but it's very easy to tune to your needs
 
-The idea is - be more readable, shorter, easier to learn, "compilable" to latex.
 
-Bad code practices, all in HTML XD
-It's made mostly for me, so if something triggers you, you're welcome to change it.
-I'm too lazy to organize it in a pretty way :)
+Most useful when quick-typing fractions or reasonably non-complex mathematical expressions.
+
+
+### TODO when I have time and initiative:  
+Top-panel with insertables (like in wysiwyg editors)  
+Move into a module, instead of everything being a shitstack  
+For efficiency hard split of MeX code on double newlines (for example with <hr>) - it'd look nice and increase speed  
+Make right panel follow left panel and the other way around as well. //Like in markdown editor for vs code  
+
+Distant todo: maybe find a latex beautifier??  
