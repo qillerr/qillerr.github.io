@@ -40,7 +40,7 @@
 				{ reg: /(?<!\.)m{{(.(?!([\#])))*?}}m/, name: '#mathit#', mode: '##', facade: 'M', range: [3,-3] },
 
 				{ reg: /(?<!(\.|\d|\)))%.*$/m, name: 'comment' },
-				{ reg: /(?<!(\.))%.*$/m, name: 'comm', mode: "ignore_borders", range: [1] },
+				{ reg: /(?<!(\S))%.*$/m, name: 'comm', mode: "ignore_borders", range: [1] },
 				
 				{ reg: /(?<!\\)\\(?!\\)/, name: 'trigger' },
 				{ reg: /\\/, name: 'backslash' },
