@@ -9,8 +9,8 @@ Most useful when quick-typing fractions or reasonably non-complex mathematical e
 
 
 ### TODO when I have time and initiative:  
+Move `<script>` dependencies into package dependencies
 Top-panel with insertables (like in wysiwyg editors)  
-Move into a module, instead of everything being a shitstack  
 For efficiency hard split of MeX code on double newlines (for example with hr) - it'd look nice and increase speed  
 Make right panel follow left panel and the other way around as well. //Like in markdown editor for vs code  
 
