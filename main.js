@@ -1,5 +1,5 @@
 const MexTranspiler = require('mex-transpiler').MexTranspiler
-const Transpiler = new MexTranspiler()
+const Transpiler = new MexTranspiler(0)
 				// console.log(1);
 				function updateMeX(){
 					// console.log(2);

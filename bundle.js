@@ -1,6 +1,6 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const MexTranspiler = require('mex-transpiler').MexTranspiler
-const Transpiler = new MexTranspiler()
+const Transpiler = new MexTranspiler(0)
 				// console.log(1);
 				function updateMeX(){
 					// console.log(2);
@@ -399,16 +399,56 @@ function splitTokenize(array, Separators)
     }
 }
 
+/**
+ * CacheMap - doubles the size of keys (for index) so might not be the best option for large cache, but for small it's worth it
+ * Adds index that keeps track of size and chronologically removes old things from the cache
+ */
+class CacheMap extends Map{
+    #maxSize;
+    #index = [];
 
+    constructor(maxSize = 256, iterable=[]){
+        super(iterable)
+        this.maxSize = maxSize;
+    }
 
-// TODO \/
-// module.exports = class MexContinuousTranspiler {
-//
-// }
+    unshift(key, value){
+        if(this.#index.indexOf(key) > -1){
+            this.#index.splice(this.#index.indexOf(key), 1)            
+        }
+        this.#index.unshift(key)
+        this.set(key, value)
+
+        if(this.#index.length >= this.#maxSize){
+            this.delete(this.#index[this.#maxSize-1])
+            this.#index.splice(this.#maxSize-1)
+        }
+    }
+
+    /**
+     * Puts called key at the top of the cache
+     * @param {*} key 
+     */
+    get(key){
+        let returnValue = super.get(key)
+        if(this.#index.indexOf(key) > -1){
+            this.#index.splice(this.#index.indexOf(key), 1)
+            this.#index.unshift(key)
+        }
+        return returnValue;
+    }
+
+    clear(){
+        super.clear()
+        this.#index = [];
+    }
+}
+
 module.exports.MexTranspiler = class MexTranspiler {
     debug
     Separators = Separators;
     Patterns = Patterns;
+    cache = new CacheMap();
 
     //Compiles/prepares separators (regex-wise)
     prepSeparators(){
@@ -440,6 +480,9 @@ module.exports.MexTranspiler = class MexTranspiler {
      */
     transpile(text)
     {
+        if(this.cache.has(text)){
+            return this.cache.get(text);
+        }
         //To work a new line needs to be added
         let arr = ["", text]
         let perf = new PerformanceMeasurer();
@@ -452,9 +495,12 @@ module.exports.MexTranspiler = class MexTranspiler {
 
         findAndReplaceAll(object, this.Patterns);
         perf.lap(); this.log(object);
-
+        
         this.log('Performance[ms]: ',perf.diffs());
-        return builder(object);
+        
+        let builtLatex = builder(object)
+        this.cache.unshift(text, builtLatex)
+        return builtLatex;
     }
 }
 },{"./preset.js":3}],3:[function(require,module,exports){
@@ -617,6 +663,7 @@ module.exports.Patterns = [
     { in: ['sep_symbol'], out: ['\\', 0, ' '], name: 'symbol', facade: 'M', type: 'facade' },
     { in: ['SF', 'paren'], out: ['\\',0,'(', 1,')'], name: 'simple_f', facade: 'M', type: 'facade' },
     { in: ['SF', 'power', 'M', 'paren'], out: ['\\',0,'^{',2,'}(', 3,')'], name: 'simple_f', facade: 'M', type: 'facade' },
+    { in: ['SF'], out: ['\\',0,' '], name: 'simple_f', facade: 'M', type: 'facade' },
     { in: ['root', 'paren'], out: ['\\sqrt{',1,'}'], name: 'sqrt', facade: 'M', type: 'facade' },
     { in: ['root', 'bracket', 'paren'], out: ['\\sqrt[',1,']{',2,'}'], name: 'n_rt', facade: 'M', type: 'facade' },
     { in: ['M', 'sub', 'M', 'power', 'M'], out: [0,'_{',2,'}^{', 4,'}'], name: 'merged_sub_pow', facade: 'M'},
