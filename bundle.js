@@ -1,7 +1,20 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const MexTranspiler = require('mex-transpiler').MexTranspiler
+const { CacheMap, MexTranspiler } = require('mex-transpiler')
+
 const Transpiler = new MexTranspiler(0)
+
+let cache = new CacheMap();
+
 function updateMeX(){
+	let currentObjects = document.querySelectorAll('#tex-out > div')
+	
+	for(let obj of currentObjects){
+		if(!cache.has(obj.getAttribute('val')))
+			cache.unshift( obj.getAttribute('val'), obj )
+	}
+
+	// let start=performance.now();
+
 	//MathJax already has typeset cache or w/e they're doing so we need only to split the Transpiler
 	let val = editor.getValue()
 
@@ -12,19 +25,33 @@ function updateMeX(){
 	}
 	
 	document.getElementById('out').value = val.join('\n\n');
+	document.getElementById('tex-out').innerHTML = ''
+	
+	let typesetArray = []
+	for(let c=0;c<val.length;c++){
 
-	val = val.join('\\math_end \\math_start')
-	val = val.replaceAll('\n', '\\math_end \\math_start');
-	document.getElementById('tex-out').innerHTML = '\\math_start'+val+'\\math_end';
+		let el = document.createElement('div')
+		el.setAttribute('val',val[c])
+		
+		if(cache.has(val[c])){
+			el = cache.get(val[c])
+			el.setAttribute('val',val[c])
+			document.getElementById('tex-out').appendChild(el)	
+		}
+		else{
+			el.class = 'tex'
+			val[c] = val[c].replaceAll('\n', '\\math_end \\math_start')
+			el.innerHTML = '\\math_start' + val[c] + '\\math_end'
+			document.getElementById('tex-out').appendChild(el)	
+			typesetArray.push(el)
+		}
+		
+	}
+	// console.log(performance.now()-start, typesetArray.length)
+	
+	MathJax.typesetPromise(typesetArray, ()=>{
 
-
-	// let returned = Transpiler.transpile(editor.getValue());
-	// document.getElementById('out').value = returned;
-	// returned = returned.replaceAll('\n', '\\math_end \\math_start');
-	// document.getElementById('tex-out').innerHTML = '\\math_start'+returned+'\\math_end';
-
-	// console.log(document.getElementById('tex-out').innerHTML)
-	MathJax.typeset()
+	})
 }
 function checkIfNew(){
 	let val = editor.getValue();;
@@ -34,12 +61,12 @@ function checkIfNew(){
 		{
 			lastValue = val;
 			updateMeX();
+			// console.log('It took '+(performance.now()-start))
 		}	
 	}catch(e){
-		console.log('ERROR', e)
+		// console.log('ERROR', e)
 	}finally{
-		console.log('It took '+(performance.now()-start))
-		setTimeout(checkIfNew, ((performance.now()-start)*2+200) );
+		setTimeout(checkIfNew, ((performance.now()-start)*2+100) );
 	}
 }
 $( document ).ready(()=>{
@@ -459,7 +486,7 @@ class CacheMap extends Map{
         this.#index = [];
     }
 }
-
+module.exports.CacheMap = CacheMap;
 module.exports.MexTranspiler = class MexTranspiler {
     debug
     Separators = Separators;
@@ -499,7 +526,6 @@ module.exports.MexTranspiler = class MexTranspiler {
         if(this.cache.has(text)){
             return this.cache.get(text);
         }
-        console.log("New calculation")
         //To work a new line needs to be added
         let arr = ["", text]
         let perf = new PerformanceMeasurer();

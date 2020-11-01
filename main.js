@@ -1,6 +1,19 @@
-const MexTranspiler = require('mex-transpiler').MexTranspiler
+const { CacheMap, MexTranspiler } = require('mex-transpiler')
+
 const Transpiler = new MexTranspiler(0)
+
+let cache = new CacheMap();
+
 function updateMeX(){
+	let currentObjects = document.querySelectorAll('#tex-out > div')
+	
+	for(let obj of currentObjects){
+		if(!cache.has(obj.getAttribute('val')))
+			cache.unshift( obj.getAttribute('val'), obj )
+	}
+
+	// let start=performance.now();
+
 	//MathJax already has typeset cache or w/e they're doing so we need only to split the Transpiler
 	let val = editor.getValue()
 
@@ -11,28 +24,33 @@ function updateMeX(){
 	}
 	
 	document.getElementById('out').value = val.join('\n\n');
-
-	//It's no differential synchronization but, we're gonna try and narrow down the new area
-
+	document.getElementById('tex-out').innerHTML = ''
 	
+	let typesetArray = []
+	for(let c=0;c<val.length;c++){
 
+		let el = document.createElement('div')
+		el.setAttribute('val',val[c])
+		
+		if(cache.has(val[c])){
+			el = cache.get(val[c])
+			el.setAttribute('val',val[c])
+			document.getElementById('tex-out').appendChild(el)	
+		}
+		else{
+			el.class = 'tex'
+			val[c] = val[c].replaceAll('\n', '\\math_end \\math_start')
+			el.innerHTML = '\\math_start' + val[c] + '\\math_end'
+			document.getElementById('tex-out').appendChild(el)	
+			typesetArray.push(el)
+		}
+		
+	}
+	// console.log(performance.now()-start, typesetArray.length)
+	
+	MathJax.typesetPromise(typesetArray, ()=>{
 
-
-
-
-
-	val = val.join('\\math_end \\math_start')
-	val = val.replaceAll('\n', '\\math_end \\math_start');
-	document.getElementById('tex-out').innerHTML = '\\math_start'+val+'\\math_end';
-
-
-	// let returned = Transpiler.transpile(editor.getValue());
-	// document.getElementById('out').value = returned;
-	// returned = returned.replaceAll('\n', '\\math_end \\math_start');
-	// document.getElementById('tex-out').innerHTML = '\\math_start'+returned+'\\math_end';
-
-	// console.log(document.getElementById('tex-out').innerHTML)
-	MathJax.typeset()
+	})
 }
 function checkIfNew(){
 	let val = editor.getValue();;
@@ -42,12 +60,12 @@ function checkIfNew(){
 		{
 			lastValue = val;
 			updateMeX();
+			// console.log('It took '+(performance.now()-start))
 		}	
 	}catch(e){
-		console.log('ERROR', e)
+		// console.log('ERROR', e)
 	}finally{
-		console.log('It took '+(performance.now()-start))
-		setTimeout(checkIfNew, ((performance.now()-start)*2+200) );
+		setTimeout(checkIfNew, ((performance.now()-start)*2+100) );
 	}
 }
 $( document ).ready(()=>{
