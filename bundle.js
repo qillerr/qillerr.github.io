@@ -1,34 +1,50 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const MexTranspiler = require('mex-transpiler').MexTranspiler
 const Transpiler = new MexTranspiler(0)
-				// console.log(1);
-				function updateMeX(){
-					// console.log(2);
-					let returned = Transpiler.transpile(editor.getValue());
-					document.getElementById('out').value = returned;
-					returned = returned.replaceAll('\n', '\\math_end \\math_start');
-					document.getElementById('tex-out').innerHTML = '\\math_start'+returned+'\\math_end';
+function updateMeX(){
+	//MathJax already has typeset cache or w/e they're doing so we need only to split the Transpiler
+	let val = editor.getValue()
 
-					// console.log(document.getElementById('tex-out').innerHTML)
-					
-					MathJax.typeset()
-				}
-				function checkIfNew(){
-					let val = editor.getValue();;
-					let start = performance.now();
-					try{
-						if(lastValue != val )
-						{
-							lastValue = val;
-							updateMeX();
-						}	
-					}catch(e){
-						console.log('ERROR', e)
-					}finally{
-						setTimeout(checkIfNew, ((performance.now()-start)*2+200) );
-					}
-				}
-				setTimeout(()=>{checkIfNew()},500);
+	val = val.split('\n\n')
+	for(let c in val){
+		let transpiled = Transpiler.transpile(val[c])
+		val[c] = transpiled;
+	}
+	
+	document.getElementById('out').value = val.join('\n\n');
+
+	val = val.join('\\math_end \\math_start')
+	val = val.replaceAll('\n', '\\math_end \\math_start');
+	document.getElementById('tex-out').innerHTML = '\\math_start'+val+'\\math_end';
+
+
+	// let returned = Transpiler.transpile(editor.getValue());
+	// document.getElementById('out').value = returned;
+	// returned = returned.replaceAll('\n', '\\math_end \\math_start');
+	// document.getElementById('tex-out').innerHTML = '\\math_start'+returned+'\\math_end';
+
+	// console.log(document.getElementById('tex-out').innerHTML)
+	MathJax.typeset()
+}
+function checkIfNew(){
+	let val = editor.getValue();;
+	let start = performance.now();
+	try{
+		if(lastValue != val )
+		{
+			lastValue = val;
+			updateMeX();
+		}	
+	}catch(e){
+		console.log('ERROR', e)
+	}finally{
+		console.log('It took '+(performance.now()-start))
+		setTimeout(checkIfNew, ((performance.now()-start)*2+200) );
+	}
+}
+$( document ).ready(()=>{
+	checkIfNew();
+})
 },{"mex-transpiler":2}],2:[function(require,module,exports){
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
@@ -483,6 +499,7 @@ module.exports.MexTranspiler = class MexTranspiler {
         if(this.cache.has(text)){
             return this.cache.get(text);
         }
+        console.log("New calculation")
         //To work a new line needs to be added
         let arr = ["", text]
         let perf = new PerformanceMeasurer();

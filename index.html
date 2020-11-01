@@ -17,7 +17,6 @@
          		 src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
   			</script>
 
-		<script src="bundle.js"></script>
 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
@@ -26,6 +25,7 @@
 		<script src="mode-matlab.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/theme-monokai.min.js" integrity="sha512-S4i/WUGRs22+8rjUVu4kBjfNuBNp8GVsgcK2lbaFdws4q6TF3Nd00LxqnHhuxS9iVDfNcUh0h6OxFUMP5DBD+g==" crossorigin="anonymous"></script>
 		<link rel="stylesheet" href="bootstrap.min.css">
+		<script src="bundle.js"></script>
 		<style>
 			#editor{
 				width:100%;
@@ -73,8 +73,10 @@ t{{ t\{\{ X \}\}t }}t : t{{ Text inline }}t
 t{{ m\{\{ X \}\}m }}t : t{{ mathit inline - }}t m{{ func }}m  vs  func 			
 </div>
 				</div>
-				<div class="col-6 tex" id="tex-out">Start editing ..</div>
+				<div class="col-6 tex" id="tex-out">Loading..</div>
 			</div>
+
+			<div id=""></div>
 			
 			<textarea class="form-control" style="background-color: black;" rows="20" id="out" disabled>
 
