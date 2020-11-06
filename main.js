@@ -1,4 +1,5 @@
 const { CacheMap, MexTranspiler } = require('mex-transpiler')
+const katex = require('katex')
 
 const Transpiler = new MexTranspiler(0)
 
@@ -12,7 +13,6 @@ function updateMeX(){
 			cache.unshift( obj.getAttribute('val'), obj )
 	}
 
-	// let start=performance.now();
 
 	//MathJax already has typeset cache or w/e they're doing so we need only to split the Transpiler
 	let val = editor.getValue()
@@ -26,6 +26,7 @@ function updateMeX(){
 	document.getElementById('out').value = val.join('\n\n');
 	document.getElementById('tex-out').innerHTML = ''
 	
+	let valSet = new Set()
 	let typesetArray = []
 	for(let c=0;c<val.length;c++){
 
@@ -33,24 +34,40 @@ function updateMeX(){
 		el.setAttribute('val',val[c])
 		
 		if(cache.has(val[c])){
-			el = cache.get(val[c])
+			if(!valSet.has(val[c]))
+				el = cache.get(val[c])
+			else
+				el = cache.get(val[c]).cloneNode(1)
 			el.setAttribute('val',val[c])
 			document.getElementById('tex-out').appendChild(el)	
+			valSet.add(val[c])
 		}
 		else{
+			valSet.add(val[c])
 			el.class = 'tex'
-			val[c] = val[c].replaceAll('\n', '\\math_end \\math_start')
-			el.innerHTML = '\\math_start' + val[c] + '\\math_end'
+			val[c] = val[c].replaceAll('\n', '\\\\')
+			el.innerHTML = '\\[' + val[c] + '\\]'
 			document.getElementById('tex-out').appendChild(el)	
-			typesetArray.push(el)
+			katex.render(val[c], el, {
+				displayMode: true,
+				strict: 'ignore',
+				fleqn: true,
+				delimiters: [
+						{left: "$$", right: "$$", display: true},
+						{left: "\\(", right: "\\)", display: false},
+						{left: "\\[", right: "\\]", display: true}
+				]//,
+				//throwOnError: true
+			})
+
 		}
 		
 	}
 	// console.log(performance.now()-start, typesetArray.length)
 	
-	MathJax.typesetPromise(typesetArray, ()=>{
+	// MathJax.typesetPromise(typesetArray, ()=>{
 
-	})
+	// })
 }
 function checkIfNew(){
 	let val = editor.getValue();;
@@ -60,7 +77,7 @@ function checkIfNew(){
 		{
 			lastValue = val;
 			updateMeX();
-			// console.log('It took '+(performance.now()-start))
+			console.log('It took '+(performance.now()-start))
 		}	
 	}catch(e){
 		// console.log('ERROR', e)
