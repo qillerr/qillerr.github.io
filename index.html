@@ -1,90 +1,535 @@
 <!DOCTYPE html>
-<html>
-	<head>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice Frequency Analyzer + FxLMS ANC</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        background: #111;
+        color: white;
+        margin: 0;
+        padding: 12px;
+      }
 
-		<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.css" integrity="sha384-qCEsSYDSH0x5I45nNW4oXemORUZnYFtPy/FqB/OjqxabTMW5HVaaH9USK4fN3goV" crossorigin="anonymous">
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 900px;
+      }
 
-		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.min.js" integrity="sha512-GoORoNnxst42zE3rYPj4bNBm0Q6ZRXKNH2D9nEmNvVF/z24ywVnijAWVi/09iBiVDQVf3UlZHpzhAJIdd9BXqw==" crossorigin="anonymous"></script>
-		<script src="mode-matlab.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/theme-monokai.min.js" integrity="sha512-S4i/WUGRs22+8rjUVu4kBjfNuBNp8GVsgcK2lbaFdws4q6TF3Nd00LxqnHhuxS9iVDfNcUh0h6OxFUMP5DBD+g==" crossorigin="anonymous"></script>
-		<link rel="stylesheet" href="bootstrap.min.css">
-		<script src="bundle.js"></script>
-		<style>
-			#editor{
-				width:100%;
-				height:900px;
-			}
-			#tex-out{
-				height:900px;
-				overflow-y:scroll;
-			}
-			.CtxtMenu_Attached_0{
-				margin-top:5px;
-				margin-bottom:5px;
-			}
-		</style>
+      th,
+      td {
+        border-bottom: 1px solid #333;
+        padding: 4px 8px;
+        font-size: 12px;
+        text-align: center;
+      }
 
+      th {
+        color: #0af;
+      }
 
+      .bar {
+        width: 100px;
+        background: #222;
+        border-radius: 4px;
+        overflow: hidden;
+        height: 16px;
+        position: relative;
+        margin: auto;
+      }
 
-	</head>
-	<body>
-		<div class="container" style="width:100%;margin-left:0px;margin-right:0px;max-width:100%">
-			<div class="row">
-				<div class="col-6">
-					<div id="editor" id="editor">t{{ Hi! }}t
-Welcome  to  m{{ MeX }}m
-t{{ Purpose: Easier, simpler, more readable, compilable to LaTeX }}t
-t{{ This was made for fractions and other basic math, not to be able to do everything }}t			
-Examples
-sqrt( 1 + 3/4^2 )
+      .fill {
+        background: #0af;
+        height: 0%;
+        width: 100%;
+        transition: height 0.1s ease-out;
+      }
 
-x/sin(x) = x^2
-(x^2+y^2)/(alpha xy)
-sum_(x=1)^inf sqrt[3](Pi)
-lim_(x->inf) sqrt(1/x)
+      #startBtn,
+      #ancBtn {
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: none;
+        background-color: #0af;
+        color: white;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.3s;
+        margin: 0 12px 12px 0;
+      }
 
->> << <= >= ~~ ~ != +- 
-R_+ F_N F__N
+      #startBtn:hover,
+      #ancBtn:hover {
+        background-color: #08c;
+      }
 
-(x+(x+xy)/y)/5
+      .plot-container {
+        margin-top: 20px;
+      }
+      canvas {
+        background: #222;
+        border-radius: 8px;
+        display: block;
+        margin-bottom: 20px;
+      }
 
-% \text{ This is a latex-only line with no MeX }
-%% Comment
+      .warn {
+        color: #ffb626;
+        margin: 8px 0 16px;
+        line-height: 1.3;
+      }
 
-t{{ l\{\{ X \}\}l }}t : l{{ \text{Latex inline } \infty }}l
-t{{ t\{\{ X \}\}t }}t : t{{ Text inline }}t
-t{{ m\{\{ X \}\}m }}t : t{{ mathit inline - }}t m{{ func }}m  vs  func 			
-</div>
-				</div>
-				<div class="col-6 tex" id="tex-out">Loading..</div>
-			</div>
+      .row-sticky {
+        position: sticky;
+        top: 0;
+        background: #111;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Voice Frequency Analyzer + FxLMS Active Noise Cancellation</h2>
+    <p class="warn">
+      ⚠️ Experimental: this uses open-air speakers and a mic. Real-time ANC in a
+      browser is limited by device latency and room acoustics. Start with low
+      volume to avoid howling/feedback.
+    </p>
+    <div>
+      <button id="startBtn">Start Mic</button>
+      <button id="ancBtn" disabled>Enable ANC</button>
+    </div>
 
-			<div id=""></div>
-			
-			<textarea class="form-control" style="background-color: black;" rows="20" id="out" disabled>
+    <table id="bars">
+      <thead class="row-sticky">
+        <tr>
+          <th>Hz</th>
+          <th>Gauge</th>
+          <th>Cur</th>
+          <th>1s</th>
+          <th>10s</th>
+          <th>60s (ref)</th>
+          <th>Δ(1s-60s)</th>
+          <th>ANC gain</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-			</textarea>
-		</div>
+    <div class="plot-container">
+      <h3>Last 1s Distribution</h3>
+      <canvas id="plot1s" width="900" height="200"></canvas>
+      <h3>Last 60s Distribution (reference)</h3>
+      <canvas id="plot60s" width="900" height="200"></canvas>
+    </div>
 
+    <script>
+      // === Configuration ===
+      const keyFreqs = [
+        1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21, 23, 24, 27, 29,
+        30, 31, 32, 33, 34, 35, 39, 48, 51, 61, 65, 67, 68, 74, 77, 90, 99, 111,
+        123, 144, 170, 240, 280, 360, 444, 555, 604, 666, 710, 777, 805, 864,
+        900, 910, 964, 1000,
+      ];
 
-		<script>
-			var editor = ace.edit("editor");
-			editor.setTheme("ace/theme/monokai");
-			editor.session.setMode("ace/mode/matlab");
-			editor.setOptions({
-				wrap: true,
-				wrapBehavioursEnabled: true
-			});
+      const ANC_CONFIG = {
+        mu: 1e-6, // adaptation rate (conservative)
+        maxOutput: 0.2, // limit anti-noise peak amplitude [0..1]
+        secPathDelay: 64, // samples of secondary-path estimate delay
+        secPathGain: 0.8, // gain of secondary-path estimate
+        updateHz: 1, // how often we update reference deltas from analyzer
+      };
 
-			let lastValue = '';
-			
+      // === DOM ===
+      const barsTableBody = document.querySelector("#bars tbody");
+      const startBtn = document.getElementById("startBtn");
+      const ancBtn = document.getElementById("ancBtn");
+      const plot1s = document.getElementById("plot1s");
+      const plot60s = document.getElementById("plot60s");
+      const ctx1s = plot1s.getContext("2d");
+      const ctx60s = plot60s.getContext("2d");
 
-		</script>
+      let audioCtx = null,
+        analyser = null,
+        source = null,
+        animationId = null,
+        ancNode = null;
 
-	</body>
+      const barElements = {};
+      const history = {}; // rolling history per frequency (percent 0..100)
+
+      // Build table rows
+      for (const f of keyFreqs) {
+        const row = document.createElement("tr");
+
+        const cellHz = document.createElement("td");
+        cellHz.textContent = f + " Hz";
+
+        const cellBar = document.createElement("td");
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        const fill = document.createElement("div");
+        fill.className = "fill";
+        bar.appendChild(fill);
+        cellBar.appendChild(bar);
+
+        const cellCur = document.createElement("td");
+        const cell1s = document.createElement("td");
+        const cell10s = document.createElement("td");
+        const cell60s = document.createElement("td");
+        const cellDelta = document.createElement("td");
+        const cellGain = document.createElement("td");
+
+        cellCur.textContent = "0%";
+        cell1s.textContent = "0%";
+        cell10s.textContent = "0%";
+        cell60s.textContent = "0%";
+        cellDelta.textContent = "0";
+        cellGain.textContent = "0.00";
+
+        row.appendChild(cellHz);
+        row.appendChild(cellBar);
+        row.appendChild(cellCur);
+        row.appendChild(cell1s);
+        row.appendChild(cell10s);
+        row.appendChild(cell60s);
+        row.appendChild(cellDelta);
+        row.appendChild(cellGain);
+
+        barsTableBody.appendChild(row);
+
+        barElements[f] = {
+          fill,
+          cur: cellCur,
+          s1: cell1s,
+          s10: cell10s,
+          s60: cell60s,
+          delta: cellDelta,
+          gain: cellGain,
+        };
+        history[f] = [];
+      }
+
+      function drawPlot(ctx, values) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = "#0af";
+        const barWidth = ctx.canvas.width / values.length;
+        values.forEach((v, i) => {
+          const h = (v / 100) * ctx.canvas.height;
+          ctx.fillRect(i * barWidth, ctx.canvas.height - h, barWidth - 1, h);
+        });
+      }
+
+      // === Audio Worklet: ANC Processor ===
+      const workletCode = `
+      class ANCProcessor extends AudioWorkletProcessor {
+        static get parameterDescriptors() { return []; }
+        constructor() {
+          super();
+          this.sampleRate = sampleRate;
+          this.freqs = [];
+          this.phase = [];
+          this.wc = []; // cos weights per freq
+          this.ws = []; // sin weights per freq
+          this.mu = 1e-6;
+          this.maxOutput = 0.2;
+          this.deltaScale = []; // per-freq reference scale (from UI, 0..1)
+
+          // Secondary-path estimate: simple delay + gain (FxLMS)
+          this.secDelay = 64;
+          this.secGain = 0.8;
+          this.secBufCos = []; // ring buffers for cos
+          this.secBufSin = [];
+          this.secIdx = 0;
+
+          this.port.onmessage = (e) => {
+            const msg = e.data || {};
+            if (msg.type === 'init') {
+              this.freqs = msg.freqs;
+              this.mu = msg.mu;
+              this.maxOutput = msg.maxOutput;
+              this.secDelay = msg.secDelay|0;
+              this.secGain = msg.secGain;
+              const N = this.freqs.length;
+              this.phase = new Array(N).fill(0);
+              this.wc = new Float32Array(N);
+              this.ws = new Float32Array(N);
+              this.deltaScale = new Float32Array(N);
+              this.secBufCos = Array.from({length:N}, ()=> new Float32Array(this.secDelay+1));
+              this.secBufSin = Array.from({length:N}, ()=> new Float32Array(this.secDelay+1));
+              this.secIdx = 0;
+            } else if (msg.type === 'delta') {
+              // delta array in [ -1..+1 ] roughly (based on UI percent difference)
+              if (this.deltaScale.length === msg.values.length) {
+                this.deltaScale.set(msg.values);
+              }
+            }
+          };
+        }
+
+        process(inputs, outputs) {
+          const input = inputs[0];
+          const output = outputs[0];
+          if (!input || input.length === 0 || this.freqs.length === 0) {
+            // pass-through silence
+            const out = output[0];
+            if (out) out.fill(0);
+            return true;
+          }
+
+          const inL = input[0]; // mono assumed
+          const outL = output[0];
+          const Nf = this.freqs.length;
+
+          for (let n = 0; n < inL.length; n++) {
+            const e = inL[n]; // error microphone signal
+
+            // Synthesize reference sinusoids per freq
+            let y = 0;
+            for (let k = 0; k < Nf; k++) {
+              // per-sample phase advance
+              const w = 2*Math.PI*this.freqs[k]/this.sampleRate;
+              this.phase[k] += w;
+              if (this.phase[k] > 1e6) this.phase[k] -= 1e6; // prevent overflow
+              const c = Math.cos(this.phase[k]);
+              const s = Math.sin(this.phase[k]);
+
+              // Secondary-path estimate (FxLMS): delay + gain
+              const bufC = this.secBufCos[k];
+              const bufS = this.secBufSin[k];
+              const idx = this.secIdx;
+              bufC[idx] = c; bufS[idx] = s;
+              const dIdx = (idx + 1) % bufC.length;
+              const cf = bufC[dIdx] * this.secGain;
+              const sf = bufS[dIdx] * this.secGain;
+
+              // Adapt using filtered references
+              // deltaScale scales step based on UI's deviation (bigger deviation => faster adapt)
+              const muEff = this.mu * (1 + Math.abs(this.deltaScale[k]));
+              this.wc[k] += muEff * cf * e;
+              this.ws[k] += muEff * sf * e;
+
+              // Output anti-noise (sum of weighted sinusoids)
+              const yk = (this.wc[k] * c + this.ws[k] * s) * this.deltaScale[k];
+              y += yk;
+            }
+            this.secIdx = (this.secIdx + 1) % (this.secDelay + 1);
+
+            // Hard limiter for stability
+            if (y > this.maxOutput) y = this.maxOutput;
+            else if (y < -this.maxOutput) y = -this.maxOutput;
+
+            outL[n] = -y; // emit anti-noise (invert)
+          }
+
+          return true;
+        }
+      }
+
+      registerProcessor('anc-processor', ANCProcessor);
+      `;
+
+      async function ensureWorklet(ctx) {
+        if (ctx.audioWorklet) {
+          const blob = new Blob([workletCode], {
+            type: "application/javascript",
+          });
+          const url = URL.createObjectURL(blob);
+          await ctx.audioWorklet.addModule(url);
+          URL.revokeObjectURL(url);
+        } else {
+          throw new Error("AudioWorklet not supported in this browser.");
+        }
+      }
+
+      async function startAudio() {
+        try {
+          if (!audioCtx) {
+            const AudioContextClass =
+              window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) {
+              alert("Web Audio API is not supported in this browser.");
+              return;
+            }
+            audioCtx = new AudioContextClass();
+          }
+
+          if (audioCtx.state === "suspended") {
+            await audioCtx.resume();
+          }
+
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+            },
+          });
+
+          source = audioCtx.createMediaStreamSource(stream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 2048;
+          source.connect(analyser);
+
+          // ANC Worklet (not connected yet until user enables)
+          await ensureWorklet(audioCtx);
+          ancNode = new AudioWorkletNode(audioCtx, "anc-processor", {
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            channelCount: 1,
+          });
+
+          // init parameters
+          ancNode.port.postMessage({
+            type: "init",
+            freqs: keyFreqs,
+            mu: ANC_CONFIG.mu,
+            maxOutput: ANC_CONFIG.maxOutput,
+            secDelay: ANC_CONFIG.secPathDelay,
+            secGain: ANC_CONFIG.secPathGain,
+          });
+
+          // mic -> anc -> speakers (connect later when enabling ANC)
+          source.connect(ancNode);
+
+          const freqBinCount = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(freqBinCount);
+          const sampleRate = audioCtx.sampleRate;
+
+          function getVolumeForFreq(freq) {
+            const bin = Math.round((freq / (sampleRate / 2)) * freqBinCount);
+            if (bin < 0 || bin >= freqBinCount) return 0;
+            return dataArray[bin];
+          }
+
+          // push deltas (1s-60s) down to worklet at 1 Hz, scaled to [-1, +1]
+          let deltaTimer = 0;
+
+          function update(ts) {
+            analyser.getByteFrequencyData(dataArray);
+
+            const vals1s = [];
+            const vals60s = [];
+            const deltas = [];
+
+            for (const f of keyFreqs) {
+              const vol = getVolumeForFreq(f); // 0–255
+              const percent = Math.round(
+                (Math.log(vol + 1) ** 2 / Math.log(256) ** 2) * 100
+              );
+
+              // Update bar
+              barElements[f].fill.style.height = percent + "%";
+
+              // Save history
+              history[f].push(percent);
+              if (history[f].length > 1200) history[f].shift(); // keep 60s (20 fps * 60)
+
+              const avg = (arr) =>
+                Math.round(arr.reduce((a, b) => a + b, 0) / (arr.length || 1));
+
+              const last1s = avg(history[f].slice(-20));
+              const last10s = avg(history[f].slice(-200));
+              const last60s = avg(history[f].slice(-1200));
+
+              barElements[f].cur.textContent = percent + "%";
+              barElements[f].s1.textContent = last1s + "%";
+              barElements[f].s10.textContent = last10s + "%";
+              barElements[f].s60.textContent = last60s + "%";
+
+              const delta = last1s - last60s; // treat 60s as reference, 1s as current
+              barElements[f].delta.textContent = delta.toFixed(0);
+
+              // derive a small ANC gain hint from deviation
+              // map delta [-100..100] -> gain [0..1] through tanh-like curve
+              const gainHint = Math.max(0, Math.min(1, Math.abs(delta) / 60));
+              barElements[f].gain.textContent = gainHint.toFixed(2);
+
+              vals1s.push(last1s);
+              vals60s.push(last60s);
+              deltas.push(delta / 100); // scale to [-1..+1]
+            }
+
+            // send delta array ~1 Hz
+            deltaTimer += 1;
+            if (deltaTimer >= 20 && ancEnabled) {
+              // ~20 animation frames ~ 1s
+              deltaTimer = 0;
+              ancNode.port.postMessage({ type: "delta", values: deltas });
+            }
+
+            drawPlot(ctx1s, vals1s);
+            drawPlot(ctx60s, vals60s);
+
+            animationId = requestAnimationFrame(update);
+          }
+
+          update();
+          startBtn.textContent = "Stop Mic";
+          ancBtn.disabled = false;
+        } catch (err) {
+          alert("Microphone access error: " + err.message);
+          startBtn.textContent = "Start Mic";
+          cleanup();
+        }
+      }
+
+      function cleanup() {
+        if (animationId) cancelAnimationFrame(animationId);
+        animationId = null;
+        if (analyser) analyser.disconnect();
+        analyser = null;
+        if (ancNode) ancNode.disconnect();
+        ancNode = null;
+        if (source) source.disconnect();
+        source = null;
+        if (audioCtx) {
+          audioCtx.close();
+          audioCtx = null;
+        }
+        for (const f of keyFreqs) {
+          barElements[f].fill.style.height = "0%";
+          barElements[f].cur.textContent = "0%";
+          barElements[f].s1.textContent = "0%";
+          barElements[f].s10.textContent = "0%";
+          barElements[f].s60.textContent = "0%";
+          barElements[f].delta.textContent = "0";
+          barElements[f].gain.textContent = "0.00";
+          history[f] = [];
+        }
+        ctx1s.clearRect(0, 0, plot1s.width, plot1s.height);
+        ctx60s.clearRect(0, 0, plot60s.width, plot60s.height);
+        ancBtn.textContent = "Enable ANC";
+        ancBtn.disabled = true;
+        ancEnabled = false;
+      }
+
+      let ancEnabled = false;
+
+      startBtn.onclick = () => {
+        if (audioCtx) {
+          cleanup();
+          startBtn.textContent = "Start Mic";
+        } else {
+          startAudio();
+        }
+      };
+
+      ancBtn.onclick = () => {
+        if (!audioCtx || !ancNode) return;
+        ancEnabled = !ancEnabled;
+        if (ancEnabled) {
+          // connect to speakers
+          ancNode.connect(audioCtx.destination);
+          ancBtn.textContent = "Disable ANC";
+        } else {
+          ancNode.disconnect();
+          ancBtn.textContent = "Enable ANC";
+        }
+      };
+    </script>
+  </body>
 </html>
